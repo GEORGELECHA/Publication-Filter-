@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WordPress Filter System</title>
+    <style>
+        .filter-bar {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 24px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+        }
+        
+        .filter-label {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+        
+        .facet-dropdown {
+            position: relative;
+        }
+        
+        .facet-dropdown select {
+            appearance: none;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 8px 32px 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #495057;
+            cursor: pointer;
+            min-width: 120px;
+        }
+        
+        .facet-dropdown select:hover {
+            background: #e9ecef;
+        }
+        
+        .facet-dropdown select:focus {
+            outline: none;
+            border-color: #007cba;
+            box-shadow: 0 0 0 2px rgba(0, 124, 186, 0.1);
+        }
+        
+        .facet-dropdown::after {
+            content: '▼';
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            color: #666;
+            font-size: 10px;
+        }
+        
+        .show-all-btn {
+            background: none;
+            border: none;
+            color: #007cba;
+            font-size: 14px;
+            cursor: pointer;
+            text-decoration: none;
+            margin-left: auto;
+            padding: 8px 12px;
+        }
+        
+        .show-all-btn:hover {
+            color: #0056b3;
+            text-decoration: underline;
+        }
+        
+        .show-all-btn::before {
+            content: '×';
+            margin-right: 4px;
+            font-weight: bold;
+        }
+        
+        /* Active state when filters are selected */
+        .facet-dropdown select:not([value=""]) {
+            background: #007cba;
+            color: white;
+            border-color: #007cba;
+        }
+        
+        /* Posts container */
+        .posts-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 24px;
+            margin-top: 24px;
+        }
+        
+        .post-item {
+            background: white;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .post-item.hidden {
+            display: none;
+        }
+        
+        .post-item h3 {
+            margin: 0 0 12px 0;
+            color: #333;
+            font-size: 18px;
+        }
+        
+        .post-meta {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+        
+        .post-excerpt {
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+        
+        .post-categories, .post-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+        
+        .post-categories span, .post-tags span {
+            background: #f0f0f0;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        /* Featured image styles - ONLY ADDITION */
+        .post-image {
+            width: 100%;
+            height: 200px;
+            overflow: hidden;
+            margin-bottom: 16px;
+            border-radius: 4px;
+        }
+        
+        .post-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .post-no-image {
+            background: #f8f9fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6c757d;
+            font-style: italic;
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+            font-size: 16px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .filter-bar {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+            }
+            
+            .facet-dropdown select {
+                width: 100%;
+            }
+            
+            .show-all-btn {
+                margin-left: 0;
+                align-self: flex-start;
+            }
+            
+            .posts-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- FILTER BAR -->
+    <div class="filter-bar">
+        <span class="filter-label">Filter by</span>
+        
+        <div class="facet-dropdown">
+            <select id="categories-filter">
+                <option value="">🏷️ Categories</option>
+                <!-- These will be populated dynamically -->
+            </select>
+        </div>
+        
+        <div class="facet-dropdown">
+            <select id="tags-filter">
+                <option value="">🏷️ Tags</option>
+                <!-- These will be populated dynamically -->
+            </select>
+        </div>
+        
+        <div class="facet-dropdown">
+            <select id="authors-filter">
+                <option value="">👤 Authors</option>
+                <!-- These will be populated dynamically -->
+            </select>
+        </div>
+        
+        <a href="#" class="show-all-btn" onclick="clearAllFilters(); return false;">Show all</a>
+    </div>
+
+    <!-- POSTS CONTAINER -->
+    <div class="posts-container" id="posts-container">
+        <!-- This will be populated by WordPress -->
+    </div>
+    
+    <div class="no-results" id="no-results" style="display: none;">
+        No posts match the selected filters.
+    </div>
+
+    <script>
+        jQuery(document).ready(function($) {
+            let allPosts = [];
+            
+            // Load posts and populate filters
+            loadPostsAndFilters();
+            
+            function loadPostsAndFilters() {
+                $.ajax({
+                    url: wpAjax.ajaxurl, // WordPress AJAX URL
+                    type: 'POST',
+                    data: {
+                        action: 'get_filtered_posts',
+                        nonce: wpAjax.nonce
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            allPosts = response.data.posts;
+                            populateFilters(response.data.filters);
+                            displayPosts(allPosts);
+                        }
+                    }
+                });
+            }
+            
+            function populateFilters(filters) {
+                // Populate categories
+                const categoriesSelect = $('#categories-filter');
+                filters.categories.forEach(cat => {
+                    categoriesSelect.append(`<option value="${cat.slug}">${cat.name}</option>`);
+                });
+                
+                // Populate tags
+                const tagsSelect = $('#tags-filter');
+                filters.tags.forEach(tag => {
+                    tagsSelect.append(`<option value="${tag.slug}">${tag.name}</option>`);
+                });
+                
+                // Populate authors
+                const authorsSelect = $('#authors-filter');
+                filters.authors.forEach(author => {
+                    authorsSelect.append(`<option value="${author.slug}">${author.name}</option>`);
+                });
+            }
+            
+            function displayPosts(posts) {
+                const container = $('#posts-container');
+                const noResults = $('#no-results');
+                
+                if (posts.length === 0) {
+                    container.hide();
+                    noResults.show();
+                    return;
+                }
+                
+                container.show();
+                noResults.hide();
+                
+                container.html(posts.map(post => {
+                    // ONLY ADDITION: Featured image HTML
+                    let imageHtml = '';
+                    if (post.featured_image && post.featured_image.url) {
+                        const imgSrc = post.featured_image.sizes && post.featured_image.sizes.medium 
+                            ? post.featured_image.sizes.medium.url 
+                            : post.featured_image.url;
+                        const imgAlt = post.featured_image.alt || post.title;
+                        imageHtml = `<div class="post-image"><img src="${imgSrc}" alt="${imgAlt}" loading="lazy"></div>`;
+                    } else {
+                        imageHtml = `<div class="post-image post-no-image">No Image</div>`;
+                    }
+                    
+                    return `
+                        <div class="post-item" data-categories="${post.categories.join(',')}" data-tags="${post.tags.join(',')}" data-author="${post.author}">
+                            ${imageHtml}
+                            <h3><a href="${post.link}">${post.title}</a></h3>
+                            <div class="post-meta">${post.date} | By ${post.author_name}</div>
+                            <div class="post-excerpt">${post.excerpt}</div>
+                            <div class="post-categories">
+                                ${post.category_names.map(cat => `<span>${cat}</span>`).join('')}
+                            </div>
+                            <div class="post-tags">
+                                ${post.tag_names.map(tag => `<span>${tag}</span>`).join('')}
+                            </div>
+                        </div>
+                    `;
+                }).join(''));
+            }
+            
+            function filterPosts() {
+                const categoryFilter = $('#categories-filter').val();
+                const tagFilter = $('#tags-filter').val();
+                const authorFilter = $('#authors-filter').val();
+                
+                const filteredPosts = allPosts.filter(post => {
+                    const matchesCategory = !categoryFilter || post.categories.includes(categoryFilter);
+                    const matchesTag = !tagFilter || post.tags.includes(tagFilter);
+                    const matchesAuthor = !authorFilter || post.author === authorFilter;
+                    
+                    return matchesCategory && matchesTag && matchesAuthor;
+                });
+                
+                displayPosts(filteredPosts);
+            }
+            
+            // Bind filter events
+            $('#categories-filter, #tags-filter, #authors-filter').on('change', filterPosts);
+            
+            // Clear all filters function
+            window.clearAllFilters = function() {
+                $('#categories-filter, #tags-filter, #authors-filter').val('');
+                displayPosts(allPosts);
+            };
+        });
+    </script>
+</body>
+</html>
